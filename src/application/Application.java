@@ -38,7 +38,7 @@ public class Application {
             if ("0".equals(opt)) break;
             switch (opt) {
                 case "1":
-                    userService.loginInteractive();
+                    //userService.loginInteractive();
                     break;
                 case "2":
                     userService.registerInteractive();

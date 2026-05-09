@@ -1,18 +1,26 @@
+package service;
+
+import database.Database;
+import model.User;
+import auth.AuthService;
+
 public class SystemService {
 
     public static void start() throws Exception {
 
+        UserService userService = new UserService();
+
         if (!Database.temUsuarios()) {
-            UserService.cadastrarAdministrador();
+            userService.createAdminInteractive();
         } else {
-            if (!UserService.validarFraseAdmin()) return;
+            if (!userService.validateAdminPhrase("phrase")) return;
         }
 
-        while (true) {
-            User user = AuthService.login();
-            if (user != null) {
-                MenuService.show(user);
-            }
-        }
+        // while (true) {
+        //     User user = AuthService.login();
+        //     if (user != null) {
+        //         MenuService.show(user);
+        //     }
+        // }
     }
 }

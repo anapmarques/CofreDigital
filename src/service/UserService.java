@@ -6,10 +6,13 @@ import util.BcryptUtil;
 import util.Input;
 import crypto.EnvelopeUtil;
 import java.security.SecureRandom;
+import Interface.Cadastro;
+import database.Database;
 
 public class UserService {
     private UserDAO dao = new UserDAO();
     private SecureRandom rnd = new SecureRandom();
+    private static Database database = new Database();
 
     // Verifica se existe algum usuário cadastrado
     public boolean hasAnyUser() {
@@ -32,6 +35,10 @@ public class UserService {
         // certificate and privateKey left null for admin when created interactively
         dao.save(u);
         System.out.println("Administrador criado com sucesso.");
+    }
+
+    public static String[] getGrupos() {
+        return database.getGrupos();
     }
 
     public boolean validateAdminPhrase(String phrase) {

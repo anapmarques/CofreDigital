@@ -1,0 +1,7 @@
+vault/
+
+*.class
+
+sources.txt
+
+bin/

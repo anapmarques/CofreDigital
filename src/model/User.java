@@ -10,6 +10,9 @@ public class User {
 
     private Long id;
     private String email;
+    private String group;
+    private String userName;
+    private int total_users;
     private String passwordHash;
     private byte[] certificate; // X.509 bytes
     private byte[] privateKeyEncrypted; // encrypted PKCS8 bytes
@@ -25,7 +28,16 @@ public class User {
     public void setId(Long id) { this.id = id; }
 
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String email) { this.email = email; setUserName(); }
+
+    public String getGroup() { return group; }
+    public void setGroup(String group) { this.group = group; }
+
+    public String getUserName() { return userName; }
+    public void setUserName() { this.userName = email.substring(0, email.indexOf('@')); } // Extrai o nome do email
+
+    public int getTotalUsers() { return total_users; }
+    public void setTotalUsers(int total_users) { this.total_users = total_users; }
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
