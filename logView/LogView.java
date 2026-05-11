@@ -1,6 +1,6 @@
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import database.LogDAO;
+import br.com.cofredigital.database.LogDAO;
 
 public class LogView {
 	public static void main(String[] args) throws Exception {
