@@ -6,7 +6,7 @@ public class LogService {
     private LogDAO dao = new LogDAO();
 
     // Registra uma mensagem de log
-    public void append(int mid, int uid) {
-        try { dao.append(mid, (long) uid); } catch (Exception e) { throw new RuntimeException(e); }
+    public void append(int mid, String timestamp) {
+        try { dao.addLog(mid, timestamp); } catch (Exception e) { throw new RuntimeException(e); }
     }
 }

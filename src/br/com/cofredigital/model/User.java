@@ -12,17 +12,44 @@ public class User {
     private String email;
     private String group;
     private String userName;
+    private String senha;
     private int total_users;
+    private String frase_secreta;
     private String passwordHash;
     private byte[] certificate; // X.509 bytes
     private byte[] privateKeyEncrypted; // encrypted PKCS8 bytes
     private byte[] totpEncrypted; // AES-encrypted TOTP secret
+    private String base32token; // TOTP secret in Base32, for display purposes only (not stored in DB)
     private boolean blocked;
     private long blockUntil; // epoch millis
     private int passwordErrors;
     private int tokenErrors;
 
     public User() {}
+
+    public User(String email, String senha, String senhaHash, String token, String frase_secreta, String grupo) {
+        setEmail(email);
+        setPasswordHash(senhaHash);
+        this.senha = senha;
+        setFraseSecreta(frase_secreta);
+        setBase32token(token);
+        this.group = grupo;
+    }
+
+    public User(String email, String senha, String frase_secreta) {
+        setEmail(email);
+        setPasswordHash(senha);
+        setFraseSecreta(frase_secreta);
+    }
+
+    public User(String email, String senha, byte[] token, String grupo, int total_users, int total_consultas) {
+        setEmail(email);
+        setPasswordHash(senha);
+        this.privateKeyEncrypted = token;
+        this.group = grupo;
+        setTotalUsers(total_users);
+        setTotalConsultas(total_consultas);
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -66,4 +93,16 @@ public class User {
     public boolean isCurrentlyBlocked() {
         return blocked && Instant.now().toEpochMilli() < blockUntil;
     }
+
+    public String getFraseSecreta() { return frase_secreta; }
+    public void setFraseSecreta(String frase_secreta) { this.frase_secreta = frase_secreta; }
+
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }  
+
+    public int getTotalConsultas() { return total_users; }
+    public void setTotalConsultas(int total_consultas) { this.total_users = total_consultas; }
+
+    public String getBase32token() { return base32token; }
+    public void setBase32token(String base32token) { this.base32token = base32token; }
 }

@@ -40,7 +40,7 @@ public class UserService {
     }
 
     public boolean validateAdminPhrase(String phrase) {
-        // simple validation: check phrase equals file content of vault/index.env? For demo accept any non-empty phrase
+        // simple validation: check phrase equals file content of vault/Files/index.env? For demo accept any non-empty phrase
         return phrase != null && !phrase.trim().isEmpty();
     }
 

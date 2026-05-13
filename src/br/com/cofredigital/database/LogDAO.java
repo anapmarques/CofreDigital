@@ -5,15 +5,37 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LogDAO {
+
     // Anexa um registro referenciando mid e uid (sem texto)
-    public void append(int mid, Long uid) throws Exception {
-        try (Connection c = ConnectionFactory.getConnection()) {
-            String sql = "INSERT INTO Registros (mid, uid, timestamp) VALUES (?, ?, datetime('now'))";
-            PreparedStatement ps = c.prepareStatement(sql);
+    public void addLog(int mid, String timestamp) throws Exception {
+        String sql = "INSERT INTO Registros (mid, timestamp) VALUES (?, ?)";
+        try (Connection c = ConnectionFactory.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, mid);
-            if (uid == null) ps.setNull(2, Types.BIGINT); else ps.setLong(2, uid);
+            ps.setString(2, timestamp);
             ps.executeUpdate();
-            ps.close();
+        } catch(Exception e) {
+            System.err.println("Error adding log entry: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addLog(int mid, String email, String timestamp) {
+        int uid = UserDAO.getUserID(email);
+        if (uid == -1) {
+            System.out.println("User with email " + email + " not found. Log entry will be added with null uid.");
+            return;
+        }
+
+        String sql = "INSERT INTO Registros (mid, uid, timestamp) VALUES (?, ?, ?)";
+        try (Connection c = ConnectionFactory.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, mid);
+            ps.setInt(2, uid);
+            ps.setString(3, timestamp);
+            ps.executeUpdate();
+        } catch(Exception e) {
+            System.err.println("Error adding log entry: " + e.getMessage());
         }
     }
 
@@ -30,5 +52,19 @@ public class LogDAO {
             st.close();
             return out;
         }
+    }
+
+    public String getMessage(int mid) {
+        String sql = "SELECT conteudo FROM Mensagens WHERE mid = ?";
+        try (Connection c = ConnectionFactory.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, mid);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getString("mensagem");
+        } catch(Exception e) {
+            System.err.println("Error fetching message for mid " + mid + ": " + e.getMessage());
+        }
+
+        return null;
     }
 }
