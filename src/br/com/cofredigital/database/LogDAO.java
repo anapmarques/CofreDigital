@@ -42,7 +42,7 @@ public class LogDAO {
     // Lista logs em ordem cronológica com timestamp, mid e uid
     public List<String> listChronological() throws Exception {
         try (Connection c = ConnectionFactory.getConnection()) {
-            String sql = "SELECT r.rid, r.mid, r.uid, r.timestamp, m.mensagem FROM Registros r LEFT JOIN Mensagens m ON r.mid = m.mid ORDER BY r.rid ASC";
+            String sql = "SELECT r.rid, r.mid, r.uid, r.timestamp, m.conteudo FROM Registros r LEFT JOIN Mensagens m ON r.mid = m.mid ORDER BY r.rid ASC";
             Statement st = c.createStatement();
             ResultSet rs = st.executeQuery(sql);
             List<String> out = new ArrayList<>();

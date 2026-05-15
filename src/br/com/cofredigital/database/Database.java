@@ -110,7 +110,7 @@ public class Database {
     }
 
     public boolean isAdminRegistered() {
-        String query = "SELECT COUNT(*) AS count FROM Usuarios u JOIN Grupos g ON u.gid = g.id WHERE g.nome = 'administrador'";
+        String query = "SELECT COUNT(*) AS count FROM Usuarios u JOIN Grupos g ON u.gid = g.gid WHERE g.nome = 'administrador'";
         try (Connection con = DriverManager.getConnection(DB_URL);
                 Statement stmt = con.createStatement();
                 ResultSet rs = stmt.executeQuery(query)) {
