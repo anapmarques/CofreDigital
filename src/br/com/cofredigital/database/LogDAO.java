@@ -60,7 +60,7 @@ public class LogDAO {
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, mid);
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getString("mensagem");
+            if (rs.next()) return rs.getString("conteudo");
         } catch(Exception e) {
             System.err.println("Error fetching message for mid " + mid + ": " + e.getMessage());
         }

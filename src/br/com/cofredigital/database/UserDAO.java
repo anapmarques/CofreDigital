@@ -49,18 +49,21 @@ public class UserDAO {
             ps.setString(1, email);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                byte[] token = rs.getBytes("chave_secreta");
-
-                return new User(
+                User u = new User(
                     rs.getString("email"),
                     rs.getString("senha"),
-                    token,
+                    rs.getBytes("chave_secreta"),
                     rs.getString("grupo"),
                     rs.getInt("total_acessos"),
                     rs.getInt("total_consultas")
                 );
+                u.setId(rs.getLong("uid"));
+                u.setBlocked(rs.getInt("blocked") == 1);
+                u.setBlockUntil(rs.getLong("blockUntil"));
+                u.setPasswordErrors(rs.getInt("passwordErrors"));
+                u.setTokenErrors(rs.getInt("tokenErrors"));
+                return u;
             }
-            ps.close();
         } catch(Exception e) {
             System.err.println("Error finding user by email: " + e.getMessage());
             throw new RuntimeException(e);

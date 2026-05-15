@@ -19,7 +19,14 @@ public class Database {
     private static HashMap<String, User> users = new HashMap<>();
 
     public static boolean temUsuarios() {
-        return !users.isEmpty();
+        String sql = "SELECT COUNT(*) FROM Usuarios";
+        try (Connection con = DriverManager.getConnection(DB_URL);
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            return rs.next() && rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     public static User buscarUser(String email) {
@@ -127,7 +134,7 @@ public class Database {
         String sql = "INSERT INTO Mensagens (mid, conteudo) VALUES (?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            InputStream input = getClass().getResourceAsStream(LOG_VIEW);
+            InputStream input = new java.io.FileInputStream(LOG_VIEW);
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String line;
             while ((line = reader.readLine()) != null) {
@@ -158,6 +165,18 @@ public class Database {
         } catch (SQLException e) {
             System.err.println("Error filling Grupos table: " + e.getMessage());
         }   
+    }
+
+    public static void seedData(Connection conn) {
+        Database db = new Database();
+        if (db.isGruposTableEmpty()) {
+            db.fillGrupos(conn);
+            System.out.println("Grupos seeded successfully.");
+        }
+        if (db.isMensagensTableEmpty()) {
+            db.fillMessages(conn);
+            System.out.println("Mensagens seeded successfully.");
+        }
     }
 
     public String getAdminCertificado() {

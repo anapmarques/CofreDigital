@@ -23,7 +23,11 @@ public class ConnectionFactory {
 
     public static Connection getConnection() throws Exception {
         Class.forName("org.sqlite.JDBC");
-        return DriverManager.getConnection(URL);
+        Connection c = DriverManager.getConnection(URL);
+        try (Statement s = c.createStatement()) {
+            s.execute("PRAGMA foreign_keys = ON");
+        }
+        return c;
     }
 
     private static void createTables(Connection conn) {
@@ -46,13 +50,16 @@ public class ConnectionFactory {
             "    bloqueado_ultima_vez TEXT," +
             "    total_users INTEGER DEFAULT 0," +
             "    gid INTEGER," +
-            "    nome TEXT" +
+            "    nome TEXT," +
+            "    FOREIGN KEY (gid) REFERENCES Grupos(gid)," +
+            "    FOREIGN KEY (kid) REFERENCES Chaveiro(kid)" +
             ")",
             "CREATE TABLE IF NOT EXISTS Chaveiro (" +
             "    kid INTEGER PRIMARY KEY AUTOINCREMENT," +
             "    uid INTEGER," +
             "    certificado_digital BLOB," +
-            "    chave_privada BLOB" +
+            "    chave_privada BLOB," +
+            "    FOREIGN KEY (uid) REFERENCES Usuarios(uid)" +
             ")",
             "CREATE TABLE IF NOT EXISTS Grupos (" +
             "    gid INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -78,6 +85,8 @@ public class ConnectionFactory {
                 System.err.println("Error creating table: " + e.getMessage());
             }
         }
+
+        Database.seedData(conn);
     }
 
 }
