@@ -171,18 +171,15 @@ public class Database {
         Database db = new Database();
         if (db.isGruposTableEmpty()) {
             db.fillGrupos(conn);
-            System.out.println("Grupos seeded successfully.");
         }
         if (db.isMensagensTableEmpty()) {
             db.fillMessages(conn);
-            System.out.println("Mensagens seeded successfully.");
         }
     }
 
     public String getAdminCertificado() {
         int kid = KeyStoreDAO.getAdminKeyId();
         if (kid == -1) {
-            System.out.println("Admin user not found or has no key assigned.");
             return null;
         }
 

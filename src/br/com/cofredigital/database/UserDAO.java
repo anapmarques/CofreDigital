@@ -10,34 +10,73 @@ public class UserDAO {
     public void save(User u) throws Exception {
         try (Connection c = ConnectionFactory.getConnection()) {
             if (u.getId() == null) {
-                String sql = "INSERT INTO Usuarios (email, senha, chave_secreta, certificado, chave_privada) VALUES (?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO Usuarios (email, senha, frase_secreta, chave_secreta, certificado, chave_privada, grupo) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
                 ps.setString(1, u.getEmail());
                 ps.setString(2, u.getPasswordHash());
-                ps.setBytes(3, u.getTotpEncrypted());
-                ps.setBytes(4, u.getCertificate());
-                ps.setBytes(5, u.getPrivateKeyEncrypted());
+                ps.setString(3, u.getFraseSecreta());
+                ps.setBytes(4, u.getTotpEncrypted());
+                ps.setBytes(5, u.getCertificate());
+                ps.setBytes(6, u.getPrivateKeyEncrypted());
+                ps.setString(7, u.getGroup() != null ? u.getGroup() : "usuario");
                 ps.executeUpdate();
                 ResultSet rs = ps.getGeneratedKeys();
                 if (rs.next()) u.setId(rs.getLong(1));
                 ps.close();
             } else {
-                String sql = "UPDATE Usuarios SET senha=?, chave_secreta=?, certificado=?, chave_privada=?, blocked=?, blockUntil=?, passwordErrors=?, tokenErrors=? WHERE uid=?";
+                String sql = "UPDATE Usuarios SET senha=?, frase_secreta=?, chave_secreta=?, certificado=?, chave_privada=?, blocked=?, blockUntil=?, passwordErrors=?, tokenErrors=? WHERE uid=?";
                 PreparedStatement ps = c.prepareStatement(sql);
                 ps.setString(1, u.getPasswordHash());
-                ps.setBytes(2, u.getTotpEncrypted());
-                ps.setBytes(3, u.getCertificate());
-                ps.setBytes(4, u.getPrivateKeyEncrypted());
-                ps.setInt(5, u.isBlocked() ? 1 : 0);
-                ps.setLong(6, u.getBlockUntil());
-                ps.setInt(7, u.getPasswordErrors());
-                ps.setInt(8, u.getTokenErrors());
-                ps.setLong(9, u.getId());
+                ps.setString(2, u.getFraseSecreta());
+                ps.setBytes(3, u.getTotpEncrypted());
+                ps.setBytes(4, u.getCertificate());
+                ps.setBytes(5, u.getPrivateKeyEncrypted());
+                ps.setInt(6, u.isBlocked() ? 1 : 0);
+                ps.setLong(7, u.getBlockUntil());
+                ps.setInt(8, u.getPasswordErrors());
+                ps.setInt(9, u.getTokenErrors());
+                ps.setLong(10, u.getId());
                 ps.executeUpdate();
                 ps.close();
             }
         } catch(Exception e) {
             System.err.println("Error saving user: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public User createUserWithKeyPair(User u, String certPem, byte[] encryptedPrivateKey) throws Exception {
+        try (Connection c = ConnectionFactory.getConnection()) {
+            String sql = "INSERT INTO Usuarios (email, senha, frase_secreta, chave_secreta, grupo) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, u.getEmail());
+            ps.setString(2, u.getPasswordHash());
+            ps.setString(3, u.getFraseSecreta());
+            ps.setBytes(4, u.getTotpEncrypted());
+            ps.setString(5, u.getGroup() != null ? u.getGroup() : "usuario");
+            ps.executeUpdate();
+            ResultSet rs = ps.getGeneratedKeys();
+            long uid = -1;
+            if (rs.next()) uid = rs.getLong(1);
+            ps.close();
+            if (uid == -1) throw new RuntimeException("Failed to create user, no UID generated.");
+
+            u.setId(uid);
+            KeyStoreDAO kdao = new KeyStoreDAO();
+            int kid = kdao.saveKeyPair(uid, certPem, encryptedPrivateKey);
+            if (kid == -1) throw new RuntimeException("Failed to save key pair in Chaveiro.");
+
+            String updateSql = "UPDATE Usuarios SET kid = ? WHERE uid = ?";
+            PreparedStatement ups = c.prepareStatement(updateSql);
+            ups.setInt(1, kid);
+            ups.setLong(2, uid);
+            ups.executeUpdate();
+            ups.close();
+
+            u.setKid(kid);
+            return u;
+        } catch(Exception e) {
+            System.err.println("Error creating user with key pair: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -62,6 +101,7 @@ public class UserDAO {
                 u.setBlockUntil(rs.getLong("blockUntil"));
                 u.setPasswordErrors(rs.getInt("passwordErrors"));
                 u.setTokenErrors(rs.getInt("tokenErrors"));
+                u.setFraseSecreta(rs.getString("frase_secreta"));
                 return u;
             }
         } catch(Exception e) {
@@ -98,8 +138,7 @@ public class UserDAO {
 
     public String getUserCertificado(String email) {
         int kid = KeyStoreDAO.getUserKeyId(email);
-        if (kid == -1) {    
-            System.out.println("User not found or has no key assigned.");
+        if (kid == -1) {
             return null;
         }
 
@@ -165,20 +204,58 @@ public class UserDAO {
         return -1;
     }
 
+    public void saveFraseSecreta(Long uid, String fraseSecretaHash) {
+        String sql = "UPDATE Usuarios SET frase_secreta = ? WHERE uid = ?";
+        try (Connection c = ConnectionFactory.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, fraseSecretaHash);
+            ps.setLong(2, uid);
+            ps.executeUpdate();
+        } catch(Exception e) {
+            System.err.println("Error saving frase secreta: " + e.getMessage());
+        }
+    }
+
+    public String getAdminFraseSecreta() throws Exception {
+        String sql = "SELECT frase_secreta FROM Usuarios WHERE uid = 1";
+        try (Connection c = ConnectionFactory.getConnection();
+             Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            if (rs.next()) return rs.getString("frase_secreta");
+        }
+        return null;
+    }
+
+    public void incrementAccessCount(User u) throws Exception {
+        String sql = "UPDATE Usuarios SET total_acessos = total_acessos + 1 WHERE uid = ?";
+        try (Connection c = ConnectionFactory.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, u.getId());
+            ps.executeUpdate();
+            u.setTotalUsers(u.getTotalUsers() + 1);
+        }
+    }
+
     public void addUser(User user, byte[] chave_privada, String certificado) {
         if (userExists(user)) {
-            System.out.println("User with email " + user.getEmail() + " already exists. Skipping add.");
             return;
         }
 
         int kid = KeyStoreDAO.addKeyChain(chave_privada, certificado);
 
         if(kid == -1) {
-            System.out.println("Failed to add key chain for user " + user.getEmail() + ". User will not be added.");
             return;
         }
 
-        byte[] encryptedPrivateKey = EnvelopeUtil.generateEncryptedTokenKey(user.getSenha(), user.getBase32token()); // Aqui você pode adicionar lógica para criptografar a chave privada se necessário
+        String base32Secret = br.com.cofredigital.util.Base32.encode(user.getBase32token().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        byte[] encryptedSecret;
+        try {
+            encryptedSecret = EnvelopeUtil.encrypt(
+                base32Secret.getBytes(java.nio.charset.StandardCharsets.UTF_8), user.getSenha());
+        } catch (Exception e) {
+            System.err.println("Error encrypting TOTP secret: " + e.getMessage());
+            return;
+        }
 
         String sql = "INSERT INTO Usuarios (email, senha, kid, chave_secreta, grupo, total_acessos, total_consultas) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection c = ConnectionFactory.getConnection();
@@ -186,7 +263,7 @@ public class UserDAO {
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getPasswordHash());
             ps.setInt(3, kid);
-            ps.setBytes(4, encryptedPrivateKey);
+            ps.setBytes(4, encryptedSecret);
             ps.setString(5, user.getGroup());
             ps.setInt(6, 0);
             ps.setInt(7, 0);

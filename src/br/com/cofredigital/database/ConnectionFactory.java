@@ -10,11 +10,6 @@ public class ConnectionFactory {
     static {
         try {
             Connection c = getConnection();
-            if (c != null) {
-                System.out.println("Connected to SQLite database.");
-            } else {
-                System.out.println("Failed to connect to SQLite database.");
-            }
             createTables(c);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -36,6 +31,7 @@ public class ConnectionFactory {
             "    uid INTEGER PRIMARY KEY AUTOINCREMENT," +
             "    email TEXT NOT NULL UNIQUE," +
             "    senha TEXT NOT NULL," +
+            "    frase_secreta TEXT," +
             "    chave_secreta BLOB," +
             "    certificado BLOB," +
             "    chave_privada BLOB," +
@@ -73,6 +69,7 @@ public class ConnectionFactory {
             "    rid INTEGER PRIMARY KEY AUTOINCREMENT," +
             "    mid INTEGER NOT NULL," +
             "    uid INTEGER," +
+            "    arquivo TEXT," +
             "    timestamp TEXT NOT NULL," +
             "    FOREIGN KEY (mid) REFERENCES Mensagens(mid)," +
             "    FOREIGN KEY (uid) REFERENCES Usuarios(uid)" +
@@ -87,6 +84,23 @@ public class ConnectionFactory {
         }
 
         Database.seedData(conn);
+        // Migration: add frase_secreta column if missing (for existing databases)
+        try {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE Usuarios ADD COLUMN frase_secreta TEXT");
+            }
+        } catch (Exception e) {
+            // Column already exists — ignore
+        }
+
+        // Migration: add arquivo column to Registros if missing
+        try {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE Registros ADD COLUMN arquivo TEXT");
+            }
+        } catch (Exception e) {
+            // Column already exists — ignore
+        }
     }
 
 }

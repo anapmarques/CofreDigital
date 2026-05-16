@@ -4,16 +4,19 @@ import java.sql.*;
 
 public class KeyStoreDAO {
 
-    // Salva par de chaves (certificado e chave privada criptografada) associado a uid
-    public void saveKeyPair(long uid, byte[] cert, byte[] privateKeyEncrypted) throws Exception {
+    // Salva par de chaves (certificado PEM e chave privada criptografada) associado a uid e retorna o KID
+    public int saveKeyPair(long uid, String certPem, byte[] privateKeyEncrypted) throws Exception {
         try (Connection c = ConnectionFactory.getConnection()) {
             String sql = "INSERT INTO Chaveiro (uid, certificado_digital, chave_privada) VALUES (?, ?, ?)";
-            PreparedStatement ps = c.prepareStatement(sql);
+            PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, uid);
-            ps.setBytes(2, cert);
+            ps.setString(2, certPem);
             ps.setBytes(3, privateKeyEncrypted);
             ps.executeUpdate();
+            ResultSet rs = ps.getGeneratedKeys();
+            int kid = rs.next() ? rs.getInt(1) : -1;
             ps.close();
+            return kid;
         }
     }
 
@@ -54,7 +57,6 @@ public class KeyStoreDAO {
     public byte[] getAdminPrivateKey() {
         int kid = getAdminKeyId();
         if (kid == -1) {
-            System.out.println("Admin user not found or has no key assigned.");
             return null;
         }
 

@@ -14,6 +14,7 @@ public class User {
     private String userName;
     private String senha;
     private int total_users;
+    private int total_consultas;
     private String frase_secreta;
     private String passwordHash;
     private byte[] certificate; // X.509 bytes
@@ -24,6 +25,7 @@ public class User {
     private long blockUntil; // epoch millis
     private int passwordErrors;
     private int tokenErrors;
+    private int kid;
 
     public User() {}
 
@@ -100,9 +102,12 @@ public class User {
     public String getSenha() { return senha; }
     public void setSenha(String senha) { this.senha = senha; }  
 
-    public int getTotalConsultas() { return total_users; }
-    public void setTotalConsultas(int total_consultas) { this.total_users = total_consultas; }
+    public int getTotalConsultas() { return total_consultas; }
+    public void setTotalConsultas(int total_consultas) { this.total_consultas = total_consultas; }
 
     public String getBase32token() { return base32token; }
     public void setBase32token(String base32token) { this.base32token = base32token; }
+
+    public int getKid() { return kid; }
+    public void setKid(int kid) { this.kid = kid; }
 }

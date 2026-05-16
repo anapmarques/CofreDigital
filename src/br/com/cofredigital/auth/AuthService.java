@@ -3,52 +3,62 @@ package br.com.cofredigital.auth;
 import br.com.cofredigital.model.User;
 import br.com.cofredigital.service.UserService;
 import br.com.cofredigital.util.BcryptUtil;
-import br.com.cofredigital.util.Input;
 
-/**
- * Garante o fluxo de autenticação combinando senha e TOTP.
- */
 public class AuthService {
     private UserService userService = new UserService();
+    private String foundPassword;
 
-    public User login() throws Exception {
-        System.out.print("Email (from certificate): ");
-        String email = Input.readLine();
-        User u = userService.findByEmail(email);
-        if (u == null) {
-            System.out.println("Usuário não encontrado");
+    public User findUser(String email) throws Exception {
+        if (email == null || email.trim().isEmpty()) {
             return null;
         }
+        return userService.findByEmail(email.trim());
+    }
 
-        if (u.isCurrentlyBlocked()) {
-            System.out.println("Usuário bloqueado até: " + u.getBlockUntil());
-            return null;
+    public String verifyPassword(User u, java.util.List<int[]> mappings) {
+        if (tryCombinations(mappings, 0, new StringBuilder(), u.getPasswordHash())) {
+            return foundPassword;
         }
+        return null;
+    }
 
-        System.out.print("Senha: ");
-        String pw = Input.readLineMasked();
-        boolean passOk = BcryptUtil.verify(pw, u.getPasswordHash());
-        if (!passOk) {
-            userService.registerPasswordError(u);
-            System.out.println("Senha incorreta");
-            return null;
-        }
-
-        System.out.print("TOTP (6 dígitos): ");
-        String code = Input.readLine();
-        try {
-            if (!new TokenService().validateTokenForUser(u, code)) {
-                userService.registerTokenError(u);
-                System.out.println("TOTP inválido");
-                return null;
+    private boolean tryCombinations(java.util.List<int[]> mappings, int index,
+                                     StringBuilder current, String storedHash) {
+        if (index == mappings.size()) {
+            String candidate = current.toString();
+            if (BcryptUtil.verify(candidate, storedHash)) {
+                foundPassword = candidate;
+                return true;
             }
-        } catch (Exception e) {
-            System.out.println("Falha ao validar TOTP");
-            return null;
+            return false;
         }
 
+        int[] pair = mappings.get(index);
+        current.append(pair[0]);
+        if (tryCombinations(mappings, index + 1, current, storedHash)) return true;
+        current.deleteCharAt(current.length() - 1);
+
+        current.append(pair[1]);
+        if (tryCombinations(mappings, index + 1, current, storedHash)) return true;
+        current.deleteCharAt(current.length() - 1);
+
+        return false;
+    }
+
+    public boolean verifyTOTP(User u, String code, String password) throws Exception {
+        return new TokenService().validateTokenForUser(u, code, password);
+    }
+
+    public void registerPasswordError(User u) {
+        userService.registerPasswordError(u);
+    }
+
+    public void registerTokenError(User u) {
+        userService.registerTokenError(u);
+    }
+
+    public void resetErrors(User u) throws Exception {
         userService.resetErrorCounts(u);
-        System.out.println("Autenticado com sucesso: " + email);
-        return u;
+        new br.com.cofredigital.database.UserDAO().incrementAccessCount(u);
     }
 }
