@@ -24,6 +24,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Date;
+import java.text.SimpleDateFormat;
+import br.com.cofredigital.database.LogDAO;
 
 public class Cadastro extends JFrame {
     private String loginName;
@@ -123,18 +125,23 @@ public class Cadastro extends JFrame {
         txtConfirmacaoSenha.getDocument().addDocumentListener(passwordLengthListener);
 
         btnCadastrar.addActionListener((ActionEvent e) -> {
+            new LogDAO().addLog(6002, loginName, now());
+
             String senha = new String(txtSenha.getPassword());
             String confirmacao = new String(txtConfirmacaoSenha.getPassword());
 
             if (!senha.equals(confirmacao)) {
+                new LogDAO().addLog(6003, loginName, now());
                 JOptionPane.showMessageDialog(this, "As senhas digitadas n\u00e3o conferem.", "Erro de Valida\u00e7\u00e3o", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (!senha.matches("\\d{8,10}")) {
+                new LogDAO().addLog(6003, loginName, now());
                 JOptionPane.showMessageDialog(this, "A senha deve conter apenas n\u00fameros e ter de 8 a 10 d\u00edgitos.", "Erro de Valida\u00e7\u00e3o", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (temSequenciaRepetida(senha)) {
+                new LogDAO().addLog(6003, loginName, now());
                 JOptionPane.showMessageDialog(this, "A senha n\u00e3o pode conter sequ\u00eancias de n\u00fameros repetidos.", "Erro de Valida\u00e7\u00e3o", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -142,6 +149,7 @@ public class Cadastro extends JFrame {
             try {
                 String certPath = txtCertificado.getText().trim();
                 if (certPath.isEmpty()) {
+                    new LogDAO().addLog(6004, loginName, now());
                     JOptionPane.showMessageDialog(this, "Informe o caminho do certificado.", "Erro", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -185,7 +193,11 @@ public class Cadastro extends JFrame {
 
                 int confirm = JOptionPane.showConfirmDialog(this, painelConfirmacao, "Confirma\u00e7\u00e3o de Cadastro", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
 
+                if (confirm == JOptionPane.NO_OPTION) {
+                    new LogDAO().addLog(6009, email, now());
+                }
                 if (confirm == JOptionPane.YES_OPTION) {
+                    new LogDAO().addLog(6008, email, now());
                     UserDAO dao = new UserDAO();
                     if (dao.findByEmail(email) != null) {
                         JOptionPane.showMessageDialog(this, "O login name (e-mail) " + email + " j\u00e1 est\u00e1 cadastrado no sistema.", "Erro de Cadastro", JOptionPane.ERROR_MESSAGE);
@@ -194,12 +206,14 @@ public class Cadastro extends JFrame {
 
                     String keyPath = txtChavePrivada.getText().trim();
                     if (keyPath.isEmpty()) {
+                        new LogDAO().addLog(6005, email, now());
                         JOptionPane.showMessageDialog(this, "Informe o caminho da chave privada.", "Erro", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
                     String fraseSecreta = new String(txtFraseSecreta.getPassword());
                     if (fraseSecreta.isEmpty()) {
+                        new LogDAO().addLog(6006, email, now());
                         JOptionPane.showMessageDialog(this, "Informe a frase secreta da chave privada.", "Erro", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
@@ -211,6 +225,7 @@ public class Cadastro extends JFrame {
                     try {
                         privateKey = SignatureUtil.decryptPrivateKey(privEncryptedBytes, fraseSecreta);
                     } catch (Exception ex) {
+                        new LogDAO().addLog(6006, email, now());
                         JOptionPane.showMessageDialog(this, "Frase secreta inv\u00e1lida ou chave privada n\u00e3o p\u00f4de ser decifrada.", "Erro de Valida\u00e7\u00e3o", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
@@ -225,6 +240,7 @@ public class Cadastro extends JFrame {
                         valid = false;
                     }
                     if (!valid) {
+                        new LogDAO().addLog(6007, email, now());
                         JOptionPane.showMessageDialog(this, "Falha ao validar a assinatura digital da chave privada com o certificado. Registro abortado.", "Erro de Valida\u00e7\u00e3o", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
@@ -286,6 +302,7 @@ public class Cadastro extends JFrame {
         });
 
         btnVoltar.addActionListener(e -> {
+            new LogDAO().addLog(6010, loginName, now());
             new Principal(user).setVisible(true);
             dispose();
         });
@@ -295,6 +312,7 @@ public class Cadastro extends JFrame {
 
         contentPane.add(painelBotoesCadastro);
 
+        new LogDAO().addLog(6001, loginName, now());
         pack();
     }
 
@@ -352,5 +370,9 @@ public class Cadastro extends JFrame {
                 updateButtonState();
             }
         };
+    }
+
+    private String now() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
     }
 }

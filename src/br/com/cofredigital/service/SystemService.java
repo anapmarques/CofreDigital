@@ -21,6 +21,9 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import br.com.cofredigital.database.LogDAO;
 
 public class SystemService {
     private static SecureRandom rnd = new SecureRandom();
@@ -28,16 +31,19 @@ public class SystemService {
 
     public static void start() throws Exception {
         if (!Database.temUsuarios()) {
+            new LogDAO().addLog(1005, now());
             boolean created = showFirstTimeSetup();
             if (!created) return;
         } else {
             String phrase = showAdminPhraseDialog();
             if (phrase == null) return;
             adminPassphrase = phrase;
+            new LogDAO().addLog(1006, now());
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(UserService::clearAdminPassphrase));
 
+        new LogDAO().addLog(1001, now());
         SwingUtilities.invokeLater(() -> new Login().setVisible(true));
     }
 
@@ -138,13 +144,18 @@ public class SystemService {
             }
         });
 
+        new LogDAO().addLog(6001, now());
+
         while (true) {
             if (JOptionPane.showConfirmDialog(null, panel,
                     "Primeiro Acesso", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+                String cancelEmail = txtEmail.getText().trim();
+                if (!cancelEmail.isEmpty()) new LogDAO().addLog(6009, cancelEmail, now());
                 return false;
             }
 
             String email = txtEmail.getText().trim();
+            new LogDAO().addLog(6002, email, now());
             String password = new String(txtSenha.getPassword());
             String confirm = new String(txtConfirmar.getPassword());
             String certPath = txtCert.getText().trim();
@@ -156,22 +167,27 @@ public class SystemService {
                 continue;
             }
             if (!password.matches("\\d{8,10}")) {
+                new LogDAO().addLog(6003, email, now());
                 JOptionPane.showMessageDialog(panel, "Senha invalida! Deve conter apenas numeros e ter 8 a 10 digitos.", "Erro", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
             if (!password.equals(confirm)) {
+                new LogDAO().addLog(6003, email, now());
                 JOptionPane.showMessageDialog(panel, "As senhas nao conferem.", "Erro", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
             if (certPath.isEmpty() || !Files.exists(Paths.get(certPath))) {
+                new LogDAO().addLog(6004, email, now());
                 JOptionPane.showMessageDialog(panel, "Selecione um arquivo de certificado valido.", "Erro", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
             if (keyPath.isEmpty() || !Files.exists(Paths.get(keyPath))) {
+                new LogDAO().addLog(6005, email, now());
                 JOptionPane.showMessageDialog(panel, "Selecione um arquivo de chave privada valido.", "Erro", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
             if (phrase.isEmpty()) {
+                new LogDAO().addLog(6006, email, now());
                 JOptionPane.showMessageDialog(panel, "Informe a frase secreta da chave privada.", "Erro", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
@@ -184,6 +200,7 @@ public class SystemService {
                 try {
                     privateKey = SignatureUtil.decryptPrivateKey(privEncryptedBytes, phrase);
                 } catch (Exception ex) {
+                    new LogDAO().addLog(6006, email, now());
                     JOptionPane.showMessageDialog(panel,
                         "Frase secreta invalida ou chave privada nao pode ser decifrada.", "Erro", JOptionPane.ERROR_MESSAGE);
                     continue;
@@ -199,6 +216,7 @@ public class SystemService {
                     valid = false;
                 }
                 if (!valid) {
+                    new LogDAO().addLog(6007, email, now());
                     JOptionPane.showMessageDialog(panel,
                         "Falha ao validar a assinatura digital da chave privada com o certificado.", "Erro", JOptionPane.ERROR_MESSAGE);
                     continue;
@@ -254,11 +272,16 @@ public class SystemService {
                 JOptionPane.showMessageDialog(null,
                     "Administrador criado com sucesso! KID: " + u.getKid(), "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
+                new LogDAO().addLog(6008, email, now());
                 return true;
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(panel,
                     "Erro ao criar administrador: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private static String now() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
     }
 }

@@ -54,6 +54,7 @@ public class Sair extends JFrame {
         btnEncerrarSessao.addActionListener(e -> {
             String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             try {
+                new LogDAO().addLog(1004, usuario.getEmail(), timestamp);
                 new LogDAO().addLog(8002, usuario.getEmail(), timestamp);
             } catch (Exception ex) {
             }
@@ -64,6 +65,7 @@ public class Sair extends JFrame {
         btnEncerrarSistema.addActionListener(e -> {
             String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             try {
+                new LogDAO().addLog(1002, timestamp);
                 new LogDAO().addLog(8003, usuario.getEmail(), timestamp);
             } catch (Exception ex) {
             }
@@ -88,5 +90,8 @@ public class Sair extends JFrame {
         add(painelBotoes, BorderLayout.SOUTH);
 
         pack();
+
+        String ts = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        try { new LogDAO().addLog(8001, usuario.getEmail(), ts); } catch (Exception ex) {}
     }
 }

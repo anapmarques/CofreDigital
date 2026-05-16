@@ -7,6 +7,9 @@ import br.com.cofredigital.service.UserService;
 import br.com.cofredigital.service.VaultService;
 import br.com.cofredigital.service.VaultService.VaultFileEntry;
 import br.com.cofredigital.service.VaultService.VaultResult;
+import br.com.cofredigital.database.LogDAO;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Principal extends JFrame {
     private User usuario;
@@ -50,13 +53,18 @@ public class Principal extends JFrame {
         JButton btnSair = new JButton("Sair do Sistema");
 
         btnCadastrar.addActionListener(e -> {
+            new LogDAO().addLog(5002, usuario.getEmail(), now());
             String[] grupos = new br.com.cofredigital.database.Database().getGrupos();
             new Cadastro(usuario, grupos).setVisible(true);
             dispose();
         });
 
-        btnConsultar.addActionListener(e -> consultarVault());
+        btnConsultar.addActionListener(e -> {
+            new LogDAO().addLog(5003, usuario.getEmail(), now());
+            consultarVault();
+        });
         btnSair.addActionListener(e -> {
+            new LogDAO().addLog(5004, usuario.getEmail(), now());
             new Sair(usuario).setVisible(true);
             dispose();
         });
@@ -67,6 +75,7 @@ public class Principal extends JFrame {
         add(painelBotoes, BorderLayout.SOUTH);
 
         pack();
+        new LogDAO().addLog(5001, usuario.getEmail(), now());
     }
 
     private void configurarTelaUser() {
@@ -89,8 +98,12 @@ public class Principal extends JFrame {
         JButton btnConsultar = new JButton("Consultar pasta de arquivos secretos");
         JButton btnSair = new JButton("Sair do Sistema");
 
-        btnConsultar.addActionListener(e -> consultarVault());
+        btnConsultar.addActionListener(e -> {
+            new LogDAO().addLog(5003, usuario.getEmail(), now());
+            consultarVault();
+        });
         btnSair.addActionListener(e -> {
+            new LogDAO().addLog(5004, usuario.getEmail(), now());
             new Sair(usuario).setVisible(true);
             dispose();
         });
@@ -100,9 +113,12 @@ public class Principal extends JFrame {
         add(painelBotoes, BorderLayout.SOUTH);
 
         pack();
+        new LogDAO().addLog(5001, usuario.getEmail(), now());
     }
 
     private void consultarVault() {
+        new LogDAO().addLog(7001, usuario.getEmail(), now());
+
         JTextField folderField = new JTextField(30);
         JPasswordField phraseField = new JPasswordField(20);
         JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
@@ -113,11 +129,16 @@ public class Principal extends JFrame {
 
         int result = JOptionPane.showConfirmDialog(this, panel,
             "Consultar Arquivos Secretos", JOptionPane.OK_CANCEL_OPTION);
-        if (result != JOptionPane.OK_OPTION) return;
+        if (result != JOptionPane.OK_OPTION) {
+            new LogDAO().addLog(7002, usuario.getEmail(), now());
+            return;
+        }
+        new LogDAO().addLog(7003, usuario.getEmail(), now());
 
         String folderPath = folderField.getText().trim();
         String phrase = new String(phraseField.getPassword());
         if (folderPath.isEmpty() || phrase.isEmpty()) {
+            new LogDAO().addLog(7004, usuario.getEmail(), now());
             JOptionPane.showMessageDialog(this, "Preencha todos os campos.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -168,12 +189,15 @@ public class Principal extends JFrame {
             JOptionPane.showMessageDialog(this, "Arquivo nao encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        new LogDAO().addLog(7010, usuario.getEmail(), now(), selected.nome);
 
         if (!selected.dono.equals(usuario.getUserName())) {
+            new LogDAO().addLog(7012, usuario.getEmail(), now(), selected.nome);
             JOptionPane.showMessageDialog(this, "Acesso negado: voce nao e o dono do arquivo.",
                 "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        new LogDAO().addLog(7011, usuario.getEmail(), now(), selected.nome);
 
         int confirm = JOptionPane.showConfirmDialog(this,
             "Deseja decriptar o arquivo \"" + selected.nome + "\"?",
@@ -188,5 +212,9 @@ public class Principal extends JFrame {
                 "Arquivo decriptado com sucesso: " + selected.nome + "\nSalvo em: " + selected.nome,
                 "Sucesso", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private String now() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
     }
 }

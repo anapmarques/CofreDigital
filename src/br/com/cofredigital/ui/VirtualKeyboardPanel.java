@@ -99,7 +99,7 @@ public class VirtualKeyboardPanel extends JPanel {
             if (BcryptUtil.verify(candidate, storedHash)) {
                 return candidate;
             }
-            return null;
+            return "";
         }
         int[] pair = mappings.get(index);
         current.append(pair[0]);
@@ -112,6 +112,6 @@ public class VirtualKeyboardPanel extends JPanel {
         if (r != null) return r;
         current.deleteCharAt(current.length() - 1);
 
-        return null;
+        return "";
     }
 }
