@@ -16,6 +16,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
@@ -24,6 +25,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.text.SimpleDateFormat;
 import br.com.cofredigital.database.LogDAO;
 
@@ -323,28 +326,53 @@ public class Cadastro extends JFrame {
     }
 
     private String extrairEmailDoSujeito(String sujeito) {
-        String[] parts = sujeito.split(",");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.toUpperCase().startsWith("EMAILADDRESS=")) {
-                return part.substring("EMAILADDRESS=".length());
-            }
-            if (part.startsWith("1.2.840.113549.1.9.1=")) {
-                return part.substring("1.2.840.113549.1.9.1=".length());
-            }
+        Pattern p = Pattern.compile(
+            "(?:^|[,+])\\s*(?:EMAILADDRESS|emailAddress|1\\.2\\.840\\.113549\\.1\\.9\\.1)=([^,+]+)",
+            Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sujeito);
+        if (m.find()) {
+            return decodeHexValue(m.group(1).trim());
         }
         return null;
     }
 
     private String extrairCNDoSujeito(String sujeito) {
-        String[] parts = sujeito.split(",");
-        for (String part : parts) {
-            part = part.trim();
-            if (part.toUpperCase().startsWith("CN=")) {
-                return part.substring(3);
-            }
+        Pattern p = Pattern.compile(
+            "(?:^|[,+])\\s*CN=([^,+]+)",
+            Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sujeito);
+        if (m.find()) {
+            return decodeHexValue(m.group(1).trim());
         }
         return null;
+    }
+
+    private String decodeHexValue(String value) {
+        if (!value.startsWith("#")) return value;
+        try {
+            String hex = value.substring(1);
+            byte[] der = new byte[hex.length() / 2];
+            for (int i = 0; i < der.length; i++) {
+                der[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+            }
+            int pos = 1;
+            int len;
+            if ((der[pos] & 0x80) == 0) {
+                len = der[pos] & 0xFF;
+                pos++;
+            } else {
+                int numBytes = der[pos] & 0x7F;
+                pos++;
+                len = 0;
+                for (int i = 0; i < numBytes; i++) {
+                    len = (len << 8) | (der[pos] & 0xFF);
+                    pos++;
+                }
+            }
+            return new String(der, pos, len, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return value;
+        }
     }
 
     private String converterParaPEM(byte[] certDerBytes) {

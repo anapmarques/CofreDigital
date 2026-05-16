@@ -8,11 +8,13 @@ import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import br.com.cofredigital.crypto.KeyDerivationUtil;
+import br.com.cofredigital.crypto.SignatureUtil;
 import br.com.cofredigital.database.Database;
 import br.com.cofredigital.database.KeyStoreDAO;
 import br.com.cofredigital.database.LogDAO;
@@ -77,7 +79,8 @@ public class VaultService {
             try {
                 currentUserPrivateKey = decryptPrivateKey(userEncryptedPrivKey, userPhrase);
             } catch (Exception ex) {
-                return new VaultResult("Frase secreta invalida ou chave privada nao pode ser decifrada.");
+                return new VaultResult(Arrays.toString(new Exception[]{ex}));
+                //return new VaultResult("Frase secreta invalida ou chave privada nao pode ser decifrada.");
             }
 
             String currentUserCertPem = new br.com.cofredigital.database.UserDAO().getUserCertificado(user.getEmail());
@@ -156,7 +159,7 @@ public class VaultService {
 
             String indexContent = new String(indexData, StandardCharsets.UTF_8);
             String[] lines = indexContent.split("\n");
-            String userName = user.getUserName();
+            String userEmail = user.getEmail();
             String userGroup = user.getGroup();
 
             List<VaultFileEntry> entries = new ArrayList<>();
@@ -167,7 +170,7 @@ public class VaultService {
                 if (parts.length >= 4) {
                     String dono = parts[2];
                     String grupo = parts[3];
-                    if (dono.equals(userName) || grupo.equals(userGroup)) {
+                    if (dono.equals(userEmail) || grupo.equals(userGroup)) {
                         entries.add(new VaultFileEntry(parts[0], parts[1], dono, grupo));
                     }
                 }
@@ -183,7 +186,7 @@ public class VaultService {
     }
 
     public String decryptFile(User user, String folderPath, String nomeSecreto,
-                               String userPhrase, String adminPassphrase) {
+                               String outputFileName, String userPhrase, String adminPassphrase) {
         String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
 
         try {
@@ -260,7 +263,7 @@ public class VaultService {
 
             new LogDAO().addLog(7014, user.getEmail(), timestamp, nomeSecreto);
 
-            java.nio.file.Path outputPath = java.nio.file.Paths.get(nomeSecreto);
+            java.nio.file.Path outputPath = java.nio.file.Paths.get(outputFileName);
             Files.write(outputPath, filePlainData);
             return null; // null = success
         } catch (Exception e) {
@@ -269,19 +272,6 @@ public class VaultService {
     }
 
     private static PrivateKey decryptPrivateKey(byte[] encryptedKeyBytes, String passphrase) throws Exception {
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        try {
-            javax.crypto.SecretKey aesKey = KeyDerivationUtil.deriveKey(passphrase);
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, aesKey);
-            byte[] decrypted = cipher.doFinal(encryptedKeyBytes);
-            return kf.generatePrivate(new java.security.spec.PKCS8EncodedKeySpec(decrypted));
-        } catch (Exception e) {
-            javax.crypto.SecretKey aesKey = KeyDerivationUtil.deriveKeySHA1PRNG(passphrase);
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, aesKey);
-            byte[] decrypted = cipher.doFinal(encryptedKeyBytes);
-            return kf.generatePrivate(new java.security.spec.PKCS8EncodedKeySpec(decrypted));
-        }
+        return SignatureUtil.decryptPrivateKey(encryptedKeyBytes, passphrase);
     }
 }

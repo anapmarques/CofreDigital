@@ -6,7 +6,9 @@ import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -40,6 +42,10 @@ public class SignatureUtil {
 
     public static PrivateKey decryptPrivateKey(byte[] encryptedKeyBytes, String passphrase) throws Exception {
         byte[] decrypted = tryDecrypt(encryptedKeyBytes, passphrase);
+        String text = new String(decrypted, StandardCharsets.US_ASCII).trim();
+        if (text.startsWith("-----BEGIN")) {
+            decrypted = pemToDer(text);
+        }
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return kf.generatePrivate(new PKCS8EncodedKeySpec(decrypted));
     }
@@ -73,6 +79,20 @@ public class SignatureUtil {
         if (isPem) {
             try {
                 return decryptAES(derBytes, passphrase);
+            } catch (Exception e) {
+                if (lastError == null) lastError = e;
+            }
+        }
+
+        try {
+            return decryptOpenSSL(encryptedKeyBytes, passphrase);
+        } catch (Exception e) {
+            if (lastError == null) lastError = e;
+        }
+
+        if (isPem) {
+            try {
+                return decryptOpenSSL(derBytes, passphrase);
             } catch (Exception e) {
                 if (lastError == null) lastError = e;
             }
@@ -122,6 +142,30 @@ public class SignatureUtil {
             cipher.init(Cipher.DECRYPT_MODE, aesKey);
             return cipher.doFinal(data);
         }
+    }
+
+    private static byte[] decryptOpenSSL(byte[] encryptedData, String passphrase) throws Exception {
+        Exception lastError = null;
+        String[] hashAlgs = {"SHA-256", "MD5"};
+        for (String hashAlg : hashAlgs) {
+            try {
+                byte[][] keyIv = KeyDerivationUtil.evpBytesToKey(passphrase, 32, 16, hashAlg);
+                SecretKeySpec key = new SecretKeySpec(keyIv[0], "AES");
+                IvParameterSpec iv = new IvParameterSpec(keyIv[1]);
+                Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                cipher.init(Cipher.DECRYPT_MODE, key, iv);
+                byte[] plaintext = cipher.doFinal(encryptedData);
+                String text = new String(plaintext, StandardCharsets.US_ASCII).trim();
+                if (text.startsWith("-----BEGIN")) {
+                    return pemToDer(text);
+                }
+                return plaintext;
+            } catch (Exception e) {
+                lastError = e;
+            }
+        }
+        if (lastError != null) throw lastError;
+        throw new Exception("Nao foi possivel decifrar (OpenSSL).");
     }
 
     private static boolean isEncryptedPKCS8(byte[] derBytes) {

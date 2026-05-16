@@ -82,26 +82,7 @@ public class Login extends JFrame {
             // Etapa 2 - senha
             new LogDAO().addLog(3001, email, now());
 
-            String passwordLengthStr = JOptionPane.showInputDialog(this,
-                "Quantos digitos tem sua senha? (8, 9 ou 10):", "Senha",
-                JOptionPane.QUESTION_MESSAGE);
-            if (passwordLengthStr == null) {
-                new LogDAO().addLog(3002, email, now());
-                return;
-            }
-            int passwordLength;
-            try {
-                passwordLength = Integer.parseInt(passwordLengthStr.trim());
-                if (passwordLength < 8 || passwordLength > 10) {
-                    JOptionPane.showMessageDialog(this, "A senha deve ter 8 a 10 digitos.", "Erro", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Valor invalido.", "Erro", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String password = VirtualKeyboardPanel.showPasswordDialog(this, passwordLength, user.getPasswordHash());
+            String password = VirtualKeyboardPanel.showPasswordDialog(this, user.getPasswordHash());
             if (password == null) {
                 new LogDAO().addLog(3002, email, now());
                 return;

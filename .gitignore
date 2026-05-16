@@ -3,3 +3,5 @@
 sources.txt
 target/
 bin/
+
+*.docx

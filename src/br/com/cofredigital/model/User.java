@@ -63,7 +63,13 @@ public class User {
     public void setGroup(String group) { this.group = group; }
 
     public String getUserName() { return userName; }
-    public void setUserName() { this.userName = email.substring(0, email.indexOf('@')); } // Extrai o nome do email
+    public void setUserName() {
+        if (email != null && email.contains("@")) {
+            this.userName = email.substring(0, email.indexOf('@'));
+        } else {
+            this.userName = email;
+        }
+    }
 
     public int getTotalUsers() { return total_users; }
     public void setTotalUsers(int total_users) { this.total_users = total_users; }

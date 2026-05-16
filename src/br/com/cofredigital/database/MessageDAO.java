@@ -55,7 +55,7 @@ public class MessageDAO {
                 ps.setString(2, mensagem);
                 ps.executeUpdate();
             }
-        } catch (IOException | SQLException e) {
+        } catch (Exception e) {
             System.err.println("Error filling Mensagens table: " + e.getMessage());
         }
     }

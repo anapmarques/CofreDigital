@@ -30,6 +30,10 @@ public class UserService {
         }
     }
 
+    public static void setAdminPassphrase(String phrase) {
+        adminPassphrase = phrase;
+    }
+
     public static String getAdminPassphrase() {
         return adminPassphrase;
     }

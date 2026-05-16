@@ -68,7 +68,7 @@ public class SystemService {
         }
     }
 
-    private static boolean showFirstTimeSetup() {
+    private static boolean showFirstTimeSetup() throws Exception {
         JOptionPane.showMessageDialog(null,
             "Nenhum usuario administrador encontrado.\n"
             + "Vamos criar o primeiro administrador do sistema.\n"
@@ -201,8 +201,9 @@ public class SystemService {
                     privateKey = SignatureUtil.decryptPrivateKey(privEncryptedBytes, phrase);
                 } catch (Exception ex) {
                     new LogDAO().addLog(6006, email, now());
-                    JOptionPane.showMessageDialog(panel,
-                        "Frase secreta invalida ou chave privada nao pode ser decifrada.", "Erro", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(panel, ex, "erro", JOptionPane.ERROR_MESSAGE);
+                    //JOptionPane.showMessageDialog(panel,
+                    //    "Frase secreta invalida ou chave privada nao pode ser decifrada.", "Erro", JOptionPane.ERROR_MESSAGE);
                     continue;
                 }
 
@@ -246,6 +247,7 @@ public class SystemService {
                 u.setGroup("administrador");
                 new UserDAO().createUserWithKeyPair(u, certPem, privEncryptedBytes);
                 adminPassphrase = phrase;
+                UserService.setAdminPassphrase(phrase);
 
                 String totpUri = QRCodeUtil.buildTOTPUri(email, base32Secret);
 

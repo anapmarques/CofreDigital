@@ -1,7 +1,10 @@
 package br.com.cofredigital.ui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import br.com.cofredigital.model.User;
 import br.com.cofredigital.service.UserService;
 import br.com.cofredigital.service.VaultService;
@@ -166,32 +169,52 @@ public class Principal extends JFrame {
             dados[i] = new Object[]{f.codigo, f.nome, f.dono, f.grupo};
         }
 
-        JTable table = new JTable(dados, colunas);
+        JTable table = new JTable(new DefaultTableModel(dados, colunas) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setPreferredSize(new Dimension(500, 200));
 
-        String selectedFile = (String) JOptionPane.showInputDialog(this, scrollPane,
-            "Arquivos Disponiveis - Selecione pelo nome",
-            JOptionPane.PLAIN_MESSAGE, null, null, null);
+        VaultFileEntry[] selectedRef = new VaultFileEntry[1];
 
-        if (selectedFile == null || selectedFile.trim().isEmpty()) return;
-
-        VaultFileEntry selected = null;
-        for (VaultFileEntry f : vr.files) {
-            if (f.nome.equals(selectedFile.trim())) {
-                selected = f;
-                break;
+        table.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.getSelectedRow();
+                    if (row >= 0) {
+                        selectedRef[0] = vr.files.get(row);
+                        Window w = SwingUtilities.getWindowAncestor(table);
+                        if (w != null) w.dispose();
+                    }
+                }
             }
-        }
+        });
 
-        if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Arquivo nao encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        JDialog dialog = new JDialog(this, "Arquivos Disponiveis", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        JButton btnVoltar = new JButton("Voltar");
+        btnVoltar.addActionListener(evt -> {
+            new LogDAO().addLog(7002, usuario.getEmail(), now());
+            dialog.dispose();
+        });
+        JPanel btnPanel = new JPanel();
+        btnPanel.add(btnVoltar);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+
+        VaultFileEntry selected = selectedRef[0];
+        if (selected == null) return;
         new LogDAO().addLog(7010, usuario.getEmail(), now(), selected.nome);
 
-        if (!selected.dono.equals(usuario.getUserName())) {
+        if (!selected.dono.equals(usuario.getEmail())) {
             new LogDAO().addLog(7012, usuario.getEmail(), now(), selected.nome);
             JOptionPane.showMessageDialog(this, "Acesso negado: voce nao e o dono do arquivo.",
                 "Erro", JOptionPane.ERROR_MESSAGE);
@@ -204,7 +227,7 @@ public class Principal extends JFrame {
             "Confirmacao", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        String error = vs.decryptFile(usuario, folderPath, selected.codigo, phrase, adminPassphrase);
+        String error = vs.decryptFile(usuario, folderPath, selected.codigo, selected.nome, phrase, adminPassphrase);
         if (error != null) {
             JOptionPane.showMessageDialog(this, "Erro ao decriptar: " + error, "Erro", JOptionPane.ERROR_MESSAGE);
         } else {

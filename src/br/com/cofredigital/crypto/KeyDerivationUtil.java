@@ -5,7 +5,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 
 public class KeyDerivationUtil {
@@ -42,5 +44,33 @@ public class KeyDerivationUtil {
         } catch (Exception e) {
             return deriveKeySHA1PRNG(password);
         }
+    }
+
+    public static byte[][] evpBytesToKey(String password, int keyLen, int ivLen, String hashAlg) throws Exception {
+        MessageDigest md = MessageDigest.getInstance(hashAlg);
+        byte[] passBytes = password.getBytes(StandardCharsets.UTF_8);
+        int mdLen = md.getDigestLength();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] last = null;
+        int produced = 0;
+
+        while (produced < keyLen + ivLen) {
+            if (last != null) {
+                md.update(last);
+            }
+            md.update(passBytes);
+            byte[] hash = md.digest();
+            output.write(hash, 0, Math.min(hash.length, keyLen + ivLen - produced));
+            produced += hash.length;
+            last = hash;
+        }
+
+        byte[] all = output.toByteArray();
+        byte[] key = new byte[keyLen];
+        byte[] iv = new byte[ivLen];
+        System.arraycopy(all, 0, key, 0, keyLen);
+        System.arraycopy(all, keyLen, iv, 0, ivLen);
+        return new byte[][]{key, iv};
     }
 }

@@ -11,52 +11,66 @@ import java.util.List;
 public class VirtualKeyboardPanel extends JPanel {
     private final VirtualKeyboard kb;
     private final List<int[]> mappings;
-    private final JLabel stepLabel;
-    private final int passwordLength;
+    private final JPasswordField passwordField;
     private final JDialog dialog;
-    private int currentStep;
+    private final String storedHash;
+    private String foundPassword = null;
 
     public VirtualKeyboardPanel(VirtualKeyboard kb, List<int[]> mappings,
-                                 JLabel stepLabel, int passwordLength, JDialog dialog) {
+                                 JPasswordField passwordField, JDialog dialog, String storedHash) {
         this.kb = kb;
         this.mappings = mappings;
-        this.stepLabel = stepLabel;
-        this.passwordLength = passwordLength;
+        this.passwordField = passwordField;
         this.dialog = dialog;
-        this.currentStep = mappings.size();
-        setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        this.storedHash = storedHash;
+        setLayout(new BorderLayout(10, 10));
         rebuild();
     }
 
     private void rebuild() {
         removeAll();
+
+        JPanel buttonsPanel = new JPanel(new GridLayout(1, VirtualKeyboard.getTotalButtons(), 8, 0));
         for (int i = 0; i < VirtualKeyboard.getTotalButtons(); i++) {
             int[] digits = kb.getButtonDigits(i + 1);
-            JButton btn = new JButton("[" + digits[0] + "][" + digits[1] + "]");
-            btn.setFont(new Font("Monospaced", Font.BOLD, 20));
-            btn.setPreferredSize(new Dimension(100, 60));
+            JButton btn = new JButton(digits[0] + " " + digits[1]);
+            btn.setFont(new Font("Monospaced", Font.BOLD, 18));
+            btn.setPreferredSize(new Dimension(70, 50));
             btn.addActionListener(e -> onButtonClick(digits));
-            add(btn);
+            buttonsPanel.add(btn);
         }
+        add(buttonsPanel, BorderLayout.CENTER);
+
+        JButton btnConfirm = new JButton("Confirmar Senha");
+        btnConfirm.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnConfirm.addActionListener(e -> onConfirm());
+        add(btnConfirm, BorderLayout.SOUTH);
+
         revalidate();
         repaint();
     }
 
     private void onButtonClick(int[] digits) {
         mappings.add(new int[]{digits[0], digits[1]});
-        currentStep++;
-
-        if (currentStep >= passwordLength) {
-            dialog.dispose();
-            return;
-        }
-
+        passwordField.setText(new String(new char[mappings.size()]).replace('\0', '*'));
         kb.shuffle();
-        stepLabel.setText("Digito " + (currentStep + 1) + " de " + passwordLength);
         rebuild();
     }
 
-    public static String showPasswordDialog(Component parent, int passwordLength, String storedHash) {
+    private void onConfirm() {
+        if (mappings.size() < 8) {
+            JOptionPane.showMessageDialog(dialog,
+                "A senha deve ter no mínimo 8 dígitos.",
+                "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String result = tryCombinations(mappings, 0, new StringBuilder(), storedHash, mappings.size());
+        foundPassword = result.isEmpty() ? "" : result;
+        dialog.dispose();
+    }
+
+    public static String showPasswordDialog(Component parent, String storedHash) {
         JFrame owner = null;
         if (parent instanceof JFrame) {
             owner = (JFrame) parent;
@@ -73,28 +87,28 @@ public class VirtualKeyboardPanel extends JPanel {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JLabel stepLabel = new JLabel("Digito 1 de " + passwordLength, SwingConstants.CENTER);
-        stepLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
-        mainPanel.add(stepLabel, BorderLayout.NORTH);
+        JPasswordField passwordField = new JPasswordField(15);
+        passwordField.setFont(new Font("Monospaced", Font.BOLD, 18));
+        passwordField.setEditable(false);
+        passwordField.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(passwordField, BorderLayout.NORTH);
 
         List<int[]> mappings = new ArrayList<>();
         VirtualKeyboard kb = new VirtualKeyboard();
-        VirtualKeyboardPanel panel = new VirtualKeyboardPanel(kb, mappings, stepLabel, passwordLength, dialog);
+        VirtualKeyboardPanel panel = new VirtualKeyboardPanel(kb, mappings, passwordField, dialog, storedHash);
 
         mainPanel.add(panel, BorderLayout.CENTER);
         dialog.add(mainPanel);
         dialog.pack();
         dialog.setLocationRelativeTo(owner);
-        dialog.setVisible(true); // blocks until dialog is disposed
+        dialog.setVisible(true);
 
-        if (mappings.size() < passwordLength) return null;
-
-        return tryCombinations(mappings, 0, new StringBuilder(), storedHash);
+        return panel.foundPassword;
     }
 
     private static String tryCombinations(List<int[]> mappings, int index,
-                                           StringBuilder current, String storedHash) {
-        if (index == mappings.size()) {
+                                           StringBuilder current, String storedHash, int maxIndex) {
+        if (index == maxIndex) {
             String candidate = current.toString();
             if (BcryptUtil.verify(candidate, storedHash)) {
                 return candidate;
@@ -103,13 +117,13 @@ public class VirtualKeyboardPanel extends JPanel {
         }
         int[] pair = mappings.get(index);
         current.append(pair[0]);
-        String r = tryCombinations(mappings, index + 1, current, storedHash);
-        if (r != null) return r;
+        String r = tryCombinations(mappings, index + 1, current, storedHash, maxIndex);
+        if (!r.isEmpty()) return r;
         current.deleteCharAt(current.length() - 1);
 
         current.append(pair[1]);
-        r = tryCombinations(mappings, index + 1, current, storedHash);
-        if (r != null) return r;
+        r = tryCombinations(mappings, index + 1, current, storedHash, maxIndex);
+        if (!r.isEmpty()) return r;
         current.deleteCharAt(current.length() - 1);
 
         return "";

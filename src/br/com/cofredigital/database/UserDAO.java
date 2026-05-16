@@ -24,7 +24,7 @@ public class UserDAO {
                 if (rs.next()) u.setId(rs.getLong(1));
                 ps.close();
             } else {
-                String sql = "UPDATE Usuarios SET senha=?, frase_secreta=?, chave_secreta=?, certificado=?, chave_privada=?, blocked=?, blockUntil=?, passwordErrors=?, tokenErrors=? WHERE uid=?";
+                String sql = "UPDATE Usuarios SET senha=?, frase_secreta=?, chave_secreta=COALESCE(?, chave_secreta), certificado=COALESCE(?, certificado), chave_privada=COALESCE(?, chave_privada), blocked=?, blockUntil=?, passwordErrors=?, tokenErrors=? WHERE uid=?";
                 PreparedStatement ps = c.prepareStatement(sql);
                 ps.setString(1, u.getPasswordHash());
                 ps.setString(2, u.getFraseSecreta());
@@ -102,6 +102,7 @@ public class UserDAO {
                 u.setPasswordErrors(rs.getInt("passwordErrors"));
                 u.setTokenErrors(rs.getInt("tokenErrors"));
                 u.setFraseSecreta(rs.getString("frase_secreta"));
+                u.setTotpEncrypted(rs.getBytes("chave_secreta"));
                 return u;
             }
         } catch(Exception e) {
