@@ -1,3 +1,5 @@
+// Ana Luiza Pinto Marques - 2211960
+// Marcos Turo Fernandes Junior - 2211712
 package br.com.cofredigital.auth;
 
 import br.com.cofredigital.util.BcryptUtil;

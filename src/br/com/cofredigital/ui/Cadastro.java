@@ -1,3 +1,5 @@
+// Ana Luiza Pinto Marques - 2211960
+// Marcos Turo Fernandes Junior - 2211712
 package br.com.cofredigital.ui;
 
 import br.com.cofredigital.model.User;
@@ -31,6 +33,14 @@ import java.text.SimpleDateFormat;
 import br.com.cofredigital.database.LogDAO;
 
 public class Cadastro extends JFrame {
+    private static final Color BG = new Color(248, 250, 252);
+    private static final Color CARD_BG = Color.WHITE;
+    private static final Color PRIMARY = new Color(79, 70, 229);
+    private static final Color TEXT = new Color(30, 41, 59);
+    private static final Color MUTED = new Color(100, 116, 139);
+    private static final Color BORDER = new Color(226, 232, 240);
+    private static final Color SUCCESS = new Color(16, 185, 129);
+
     private String loginName;
     private String groupName;
     private String userName;
@@ -54,71 +64,219 @@ public class Cadastro extends JFrame {
         this.loginName = user.getEmail();
         this.groupName = user.getGroup();
         this.userName = user.getUserName();
-        this.total_users = user.getTotalUsers();
+        this.total_users = new UserDAO().getNumUsuarios();
         this.groups = groups;
         this.user = user;
 
         openRegisterScreen();
     }
 
+    private JPanel criarCard() {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(24, 28, 24, 28)
+        ));
+        return card;
+    }
+
+    private JButton criarBotaoPrimario(String texto) {
+        JButton btn = new JButton(texto);
+        btn.setBackground(PRIMARY);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(UIManager.getFont("Button.font"));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        return btn;
+    }
+
+    private JButton criarBotaoSecundario(String texto) {
+        JButton btn = new JButton(texto);
+        btn.setFont(UIManager.getFont("Label.font"));
+        btn.setForeground(TEXT);
+        btn.setBackground(new Color(241, 245, 249));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        return btn;
+    }
+
     private void openRegisterScreen() {
-        setTitle("Menu Principal");
+        setTitle("Cofre Digital - Cadastro de Usuario");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setMinimumSize(new Dimension(580, 520));
+        getContentPane().setBackground(BG);
+        setLayout(new GridBagLayout());
 
-        Container contentPane = getContentPane();
-        contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
+        JPanel card = criarCard();
 
-        JLabel headerLabel = new JLabel("<html>Login: " + loginName + "<br>" + "Grupo: " + groupName + "<br>" + "Nome: " + userName + "</html>");
-        headerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        contentPane.add(headerLabel);
+        JLabel titleLabel = new JLabel("Cadastrar novo usuario");
+        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 17f));
+        titleLabel.setForeground(TEXT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        card.add(titleLabel);
 
-        JLabel labelCorpo1 = new JLabel("<html>Total de usuários: " + total_users + "</html>");
-        labelCorpo1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        labelCorpo1.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        contentPane.add(labelCorpo1);
+        JLabel subtitleLabel = new JLabel("Login: " + loginName + "  |  Grupo: " + groupName);
+        subtitleLabel.setFont(UIManager.getFont("Label.font"));
+        subtitleLabel.setForeground(MUTED);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subtitleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        card.add(subtitleLabel);
 
-        JPanel painelCadastro = new JPanel(new GridLayout(6, 2, 5, 5));
-        painelCadastro.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JLabel statsLabel = new JLabel("Total de usuarios: " + total_users);
+        statsLabel.setFont(UIManager.getFont("Label.font"));
+        statsLabel.setForeground(MUTED);
+        statsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statsLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
+        card.add(statsLabel);
 
-        JLabel lblCertificado = new JLabel("Caminho do Certificado:");
-        JTextField txtCertificado = new JTextField(20);
+        JSeparator sep = new JSeparator();
+        sep.setMaximumSize(new Dimension(400, 1));
+        sep.setForeground(BORDER);
+        sep.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(sep);
+        card.add(Box.createVerticalStrut(14));
 
-        JLabel lblChavePrivada = new JLabel("Caminho da Chave Privada:");
-        JTextField txtChavePrivada = new JTextField(20);
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(CARD_BG);
+        formPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 4, 4, 6);
+        gbc.anchor = GridBagConstraints.WEST;
 
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
+        JLabel lblCertificado = new JLabel("Certificado:");
+        lblCertificado.setForeground(TEXT);
+        lblCertificado.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblCertificado, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
+        JTextField txtCertificado = new JTextField(22);
+        txtCertificado.setFont(UIManager.getFont("TextField.font"));
+        txtCertificado.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        JPanel painelCert = new JPanel(new BorderLayout(6, 0));
+        painelCert.setBackground(CARD_BG);
+        painelCert.add(txtCertificado, BorderLayout.CENTER);
+        JButton btnCert = new JButton("\uD83D\uDCC1");
+        btnCert.setFont(UIManager.getFont("Button.font"));
+        btnCert.setBackground(new Color(241, 245, 249));
+        btnCert.setFocusPainted(false);
+        btnCert.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btnCert.addActionListener(ev -> {
+            JFileChooser chooser = new JFileChooser();
+            if (chooser.showOpenDialog(Cadastro.this) == JFileChooser.APPROVE_OPTION) {
+                txtCertificado.setText(chooser.getSelectedFile().getAbsolutePath());
+            }
+        });
+        painelCert.add(btnCert, BorderLayout.EAST);
+        formPanel.add(painelCert, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(4, 4, 4, 6);
+        JLabel lblChavePrivada = new JLabel("Chave Privada:");
+        lblChavePrivada.setForeground(TEXT);
+        lblChavePrivada.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblChavePrivada, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
+        JTextField txtChavePrivada = new JTextField(22);
+        txtChavePrivada.setFont(UIManager.getFont("TextField.font"));
+        txtChavePrivada.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        JPanel painelKey = new JPanel(new BorderLayout(6, 0));
+        painelKey.setBackground(CARD_BG);
+        painelKey.add(txtChavePrivada, BorderLayout.CENTER);
+        JButton btnKey = new JButton("\uD83D\uDCC1");
+        btnKey.setFont(UIManager.getFont("Button.font"));
+        btnKey.setBackground(new Color(241, 245, 249));
+        btnKey.setFocusPainted(false);
+        btnKey.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btnKey.addActionListener(ev -> {
+            JFileChooser chooser = new JFileChooser();
+            if (chooser.showOpenDialog(Cadastro.this) == JFileChooser.APPROVE_OPTION) {
+                txtChavePrivada.setText(chooser.getSelectedFile().getAbsolutePath());
+            }
+        });
+        painelKey.add(btnKey, BorderLayout.EAST);
+        formPanel.add(painelKey, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(4, 4, 4, 6);
         JLabel lblFraseSecreta = new JLabel("Frase Secreta:");
-        JPasswordField txtFraseSecreta = new JPasswordField(20);
+        lblFraseSecreta.setForeground(TEXT);
+        lblFraseSecreta.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblFraseSecreta, gbc);
 
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
+        JPasswordField txtFraseSecreta = new JPasswordField(22);
+        txtFraseSecreta.setFont(UIManager.getFont("PasswordField.font"));
+        txtFraseSecreta.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        formPanel.add(txtFraseSecreta, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(4, 4, 4, 6);
         JLabel lblGrupo = new JLabel("Grupo:");
+        lblGrupo.setForeground(TEXT);
+        lblGrupo.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblGrupo, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
         JComboBox<String> comboGrupo = new JComboBox<>(groups);
+        comboGrupo.setFont(UIManager.getFont("Label.font"));
+        comboGrupo.setBackground(Color.WHITE);
+        comboGrupo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        ));
+        formPanel.add(comboGrupo, gbc);
 
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(4, 4, 4, 6);
         JLabel lblSenha = new JLabel("Senha Pessoal:");
-        JPasswordField txtSenha = new JPasswordField(10);
+        lblSenha.setForeground(TEXT);
+        lblSenha.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblSenha, gbc);
 
-        JLabel lblConfirmacaoSenha = new JLabel("Confirmação Senha:");
-        JPasswordField txtConfirmacaoSenha = new JPasswordField(10);
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
+        JPasswordField txtSenha = new JPasswordField(22);
+        txtSenha.setFont(UIManager.getFont("PasswordField.font"));
+        txtSenha.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        formPanel.add(txtSenha, gbc);
 
-        painelCadastro.add(lblCertificado);
-        painelCadastro.add(txtCertificado);
-        painelCadastro.add(lblChavePrivada);
-        painelCadastro.add(txtChavePrivada);
-        painelCadastro.add(lblFraseSecreta);
-        painelCadastro.add(txtFraseSecreta);
-        painelCadastro.add(lblGrupo);
-        painelCadastro.add(comboGrupo);
-        painelCadastro.add(lblSenha);
-        painelCadastro.add(txtSenha);
-        painelCadastro.add(lblConfirmacaoSenha);
-        painelCadastro.add(txtConfirmacaoSenha);
+        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE; gbc.insets = new Insets(4, 4, 4, 6);
+        JLabel lblConfirmacaoSenha = new JLabel("Confirmar Senha:");
+        lblConfirmacaoSenha.setForeground(TEXT);
+        lblConfirmacaoSenha.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 13f));
+        formPanel.add(lblConfirmacaoSenha, gbc);
 
-        contentPane.add(painelCadastro);
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.insets = new Insets(4, 0, 4, 0);
+        JPasswordField txtConfirmacaoSenha = new JPasswordField(22);
+        txtConfirmacaoSenha.setFont(UIManager.getFont("PasswordField.font"));
+        txtConfirmacaoSenha.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        formPanel.add(txtConfirmacaoSenha, gbc);
 
-        JPanel painelBotoesCadastro = new JPanel(new FlowLayout());
-        JButton btnCadastrar = new JButton("Cadastrar");
+        card.add(formPanel);
+        card.add(Box.createVerticalStrut(14));
+
+        JPanel painelBotoesCadastro = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        painelBotoesCadastro.setBackground(CARD_BG);
+        JButton btnCadastrar = criarBotaoPrimario("Cadastrar");
         btnCadastrar.setEnabled(false);
-        JButton btnVoltar = new JButton("Voltar");
+        JButton btnVoltar = criarBotaoSecundario("Voltar");
         if (user == null){
             btnVoltar.setEnabled(false);
         }
@@ -126,6 +284,16 @@ public class Cadastro extends JFrame {
         DocumentListener passwordLengthListener = createPasswordLengthListener(txtSenha, txtConfirmacaoSenha, btnCadastrar, 8);
         txtSenha.getDocument().addDocumentListener(passwordLengthListener);
         txtConfirmacaoSenha.getDocument().addDocumentListener(passwordLengthListener);
+
+        painelBotoesCadastro.add(btnCadastrar);
+        painelBotoesCadastro.add(btnVoltar);
+        card.add(painelBotoesCadastro);
+
+        GridBagConstraints gbcRoot = new GridBagConstraints();
+        gbcRoot.gridx = 0;
+        gbcRoot.gridy = 0;
+        gbcRoot.insets = new Insets(16, 16, 16, 16);
+        getContentPane().add(card, gbcRoot);
 
         btnCadastrar.addActionListener((ActionEvent e) -> {
             new LogDAO().addLog(6002, loginName, now());
@@ -178,21 +346,20 @@ public class Cadastro extends JFrame {
                     return;
                 }
 
-                JPanel painelConfirmacao = new JPanel(new GridLayout(7, 2, 5, 5));
-                painelConfirmacao.add(new JLabel("Vers\u00e3o:"));
-                painelConfirmacao.add(new JLabel(versao));
-                painelConfirmacao.add(new JLabel("S\u00e9rie:"));
-                painelConfirmacao.add(new JLabel(serie));
-                painelConfirmacao.add(new JLabel("Validade:"));
-                painelConfirmacao.add(new JLabel(valInicio + " a " + valFim));
-                painelConfirmacao.add(new JLabel("Tipo de Assinatura:"));
-                painelConfirmacao.add(new JLabel(tipoAssinatura));
-                painelConfirmacao.add(new JLabel("Emissor:"));
-                painelConfirmacao.add(new JLabel(emissor));
-                painelConfirmacao.add(new JLabel("Sujeito (Friendly Name):"));
-                painelConfirmacao.add(new JLabel(friendlyName));
-                painelConfirmacao.add(new JLabel("E-mail:"));
-                painelConfirmacao.add(new JLabel(email));
+                    JPanel painelConfirmacao = new JPanel(new GridBagLayout());
+                painelConfirmacao.setBackground(CARD_BG);
+                painelConfirmacao.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+                GridBagConstraints cgbc = new GridBagConstraints();
+                cgbc.insets = new Insets(3, 4, 3, 8);
+                cgbc.anchor = GridBagConstraints.WEST;
+                cgbc.gridx = 0; cgbc.gridy = 0; cgbc.fill = GridBagConstraints.NONE;
+                addConfirmRow(painelConfirmacao, cgbc, "Vers\u00e3o:", versao, 0);
+                addConfirmRow(painelConfirmacao, cgbc, "S\u00e9rie:", serie, 1);
+                addConfirmRow(painelConfirmacao, cgbc, "Validade:", valInicio + " a " + valFim, 2);
+                addConfirmRow(painelConfirmacao, cgbc, "Assinatura:", tipoAssinatura, 3);
+                addConfirmRow(painelConfirmacao, cgbc, "Emissor:", emissor, 4);
+                addConfirmRow(painelConfirmacao, cgbc, "Sujeito:", friendlyName, 5);
+                addConfirmRow(painelConfirmacao, cgbc, "E-mail:", email, 6);
 
                 int confirm = JOptionPane.showConfirmDialog(this, painelConfirmacao, "Confirma\u00e7\u00e3o de Cadastro", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
 
@@ -269,12 +436,35 @@ public class Cadastro extends JFrame {
 
                     String totpUri = QRCodeUtil.buildTOTPUri(email, base32Secret);
 
-                    JPanel painelTOTP = new JPanel(new BorderLayout(10, 10));
-                    JPanel painelInfo = new JPanel(new GridLayout(4, 1, 5, 5));
-                    painelInfo.add(new JLabel("<html><b>Configura\u00e7\u00e3o do Google Authenticator</b></html>"));
-                    painelInfo.add(new JLabel("Secret (BASE32): " + base32Secret));
-                    painelInfo.add(new JLabel("URI: " + totpUri));
-                    painelInfo.add(new JLabel("<html><i>Use o secret acima ou escaneie o QRCode com o Google Authenticator.</i></html>"));
+                    JPanel painelTOTP = new JPanel(new BorderLayout(14, 14));
+                    painelTOTP.setBackground(CARD_BG);
+                    painelTOTP.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+                    JPanel painelInfo = new JPanel();
+                    painelInfo.setLayout(new BoxLayout(painelInfo, BoxLayout.Y_AXIS));
+                    painelInfo.setBackground(CARD_BG);
+                    JLabel tituloTotp = new JLabel("Configuracao do Google Authenticator");
+                    tituloTotp.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 15f));
+                    tituloTotp.setForeground(PRIMARY);
+                    tituloTotp.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    painelInfo.add(tituloTotp);
+                    painelInfo.add(Box.createVerticalStrut(10));
+                    JLabel secretLabel = new JLabel("Secret (BASE32): " + base32Secret);
+                    secretLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+                    secretLabel.setForeground(TEXT);
+                    secretLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    painelInfo.add(secretLabel);
+                    painelInfo.add(Box.createVerticalStrut(4));
+                    JLabel uriLabel = new JLabel("URI: " + totpUri);
+                    uriLabel.setFont(UIManager.getFont("Label.font").deriveFont(11f));
+                    uriLabel.setForeground(MUTED);
+                    uriLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    painelInfo.add(uriLabel);
+                    painelInfo.add(Box.createVerticalStrut(8));
+                    JLabel instrucao = new JLabel("<html><div style='text-align:center;'>Use o secret acima ou escaneie o QR Code<br>com o Google Authenticator.</div></html>");
+                    instrucao.setFont(UIManager.getFont("Label.font"));
+                    instrucao.setForeground(MUTED);
+                    instrucao.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    painelInfo.add(instrucao);
                     painelTOTP.add(painelInfo, BorderLayout.NORTH);
 
                     try {
@@ -282,6 +472,7 @@ public class Cadastro extends JFrame {
                         JLabel lblQR = new JLabel(new ImageIcon(qrImage));
                         lblQR.setAlignmentX(Component.CENTER_ALIGNMENT);
                         JPanel painelQR = new JPanel();
+                        painelQR.setBackground(CARD_BG);
                         painelQR.add(lblQR);
                         painelTOTP.add(painelQR, BorderLayout.CENTER);
                     } catch (Exception ex) {
@@ -290,7 +481,7 @@ public class Cadastro extends JFrame {
 
                     JOptionPane.showMessageDialog(this, painelTOTP, "TOTP - Google Authenticator", JOptionPane.INFORMATION_MESSAGE);
 
-                    JOptionPane.showMessageDialog(this, "Usu\u00e1rio cadastrado com sucesso! KID: " + novoUsuario.getKid(), "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Usu\u00e1rio cadastrado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
 
                     txtCertificado.setText("");
                     txtChavePrivada.setText("");
@@ -310,13 +501,22 @@ public class Cadastro extends JFrame {
             dispose();
         });
 
-        painelBotoesCadastro.add(btnCadastrar);
-        painelBotoesCadastro.add(btnVoltar);
-
-        contentPane.add(painelBotoesCadastro);
-
-        new LogDAO().addLog(6001, loginName, now());
         pack();
+        setLocationRelativeTo(null);
+        new LogDAO().addLog(6001, loginName, now());
+    }
+
+    private void addConfirmRow(JPanel panel, GridBagConstraints gbc, String label, String value, int row) {
+        gbc.gridy = row; gbc.gridx = 0; gbc.fill = GridBagConstraints.NONE;
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD));
+        lbl.setForeground(TEXT);
+        panel.add(lbl, gbc);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel val = new JLabel(value);
+        val.setFont(UIManager.getFont("Label.font"));
+        val.setForeground(MUTED);
+        panel.add(val, gbc);
     }
 
     private boolean temSequenciaRepetida(String senha) {

@@ -1,3 +1,5 @@
+// Ana Luiza Pinto Marques - 2211960
+// Marcos Turo Fernandes Junior - 2211712
 package br.com.cofredigital.database;
 
 import java.sql.*;
@@ -49,11 +51,12 @@ public class LogDAO {
         }
     }
 
-    // Lista logs em ordem cronologica com data, hora, codigo, usuario e arquivo
+    // Lista logs em ordem cronologica com data, hora, codigo e mensagem (com placeholders substituidos)
     public List<String> listChronological() throws Exception {
         try (Connection c = ConnectionFactory.getConnection()) {
-            String sql = "SELECT r.rid, r.mid, r.timestamp, r.arquivo, u.email "
+            String sql = "SELECT r.rid, r.mid, r.timestamp, r.arquivo, u.email, m.conteudo "
                        + "FROM Registros r LEFT JOIN Usuarios u ON r.uid = u.uid "
+                       + "LEFT JOIN Mensagens m ON r.mid = m.mid "
                        + "ORDER BY r.rid ASC";
             Statement st = c.createStatement();
             ResultSet rs = st.executeQuery(sql);
@@ -61,12 +64,24 @@ public class LogDAO {
             while (rs.next()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(rs.getString("timestamp"));
-                sb.append(" | MID=").append(rs.getInt("mid"));
-                if (rs.getString("email") != null) {
-                    sb.append(" | ").append(rs.getString("email"));
-                }
-                if (rs.getString("arquivo") != null) {
-                    sb.append(" | arquivo=").append(rs.getString("arquivo"));
+                sb.append(" | ").append(rs.getInt("mid"));
+                String msg = rs.getString("conteudo");
+                if (msg != null) {
+                    String email = rs.getString("email");
+                    if (email != null) {
+                        msg = msg.replace("{login_name}", email);
+                    }
+                    else {
+                        msg = msg.replace("{login_name}", "?");
+                    }
+                    String arquivo = rs.getString("arquivo");
+                    if (arquivo != null) {
+                        msg = msg.replace("{arq_name}", arquivo);
+                    }
+                    else {
+                        msg = msg.replace("{arq_name}", "?");
+                    }
+                    sb.append(" ").append(msg);
                 }
                 out.add(sb.toString());
             }

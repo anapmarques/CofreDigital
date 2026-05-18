@@ -1,7 +1,10 @@
+// Ana Luiza Pinto Marques - 2211960
+// Marcos Turo Fernandes Junior - 2211712
 package br.com.cofredigital.ui;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -15,6 +18,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Principal extends JFrame {
+    private static final Color BG = new Color(248, 250, 252);
+    private static final Color CARD_BG = Color.WHITE;
+    private static final Color PRIMARY = new Color(79, 70, 229);
+    private static final Color TEXT = new Color(30, 41, 59);
+    private static final Color MUTED = new Color(100, 116, 139);
+    private static final Color BORDER = new Color(226, 232, 240);
+
     private User usuario;
 
     public Principal(User usuario) {
@@ -22,7 +32,9 @@ public class Principal extends JFrame {
 
         setTitle("Cofre Digital - Menu Principal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setMinimumSize(new Dimension(560, 380));
+        getContentPane().setBackground(BG);
+        setLayout(new GridBagLayout());
 
         if ("administrador".equals(usuario.getGroup())) {
             configurarTelaAdmin();
@@ -34,207 +46,174 @@ public class Principal extends JFrame {
         }
     }
 
+    private JPanel criarCard() {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            BorderFactory.createEmptyBorder(28, 36, 28, 36)
+        ));
+        return card;
+    }
+
+    private JButton criarBotaoPrincipal(String texto, String descricao) {
+        JPanel btnPanel = new JPanel(new BorderLayout());
+        btnPanel.setBackground(CARD_BG);
+        btnPanel.setMaximumSize(new Dimension(340, 52));
+
+        JButton btn = new JButton(texto);
+        btn.setBackground(PRIMARY);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(UIManager.getFont("Button.font"));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return btn;
+    }
+
+    private JButton criarBotaoSecundario(String texto) {
+        JButton btn = new JButton(texto);
+        btn.setFont(UIManager.getFont("Label.font"));
+        btn.setForeground(TEXT);
+        btn.setBackground(new Color(241, 245, 249));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 18, 10, 18));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return btn;
+    }
+
     private void configurarTelaAdmin() {
-        setLayout(new BorderLayout());
+        JPanel card = criarCard();
 
-        JLabel labelCabecalho = new JLabel("<html>Login: " + usuario.getEmail() + "<br>" +
-            "Grupo: " + usuario.getGroup() + "<br>" +
-            "Nome: " + usuario.getUserName() + "</html>");
-        labelCabecalho.setHorizontalAlignment(SwingConstants.CENTER);
-        labelCabecalho.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(labelCabecalho, BorderLayout.NORTH);
+        JLabel titleLabel = new JLabel("Menu do Administrador");
+        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 18f));
+        titleLabel.setForeground(TEXT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        card.add(titleLabel);
 
-        JLabel labelCorpo1 = new JLabel("Total de acessos do usuario: " + usuario.getTotalUsers());
-        labelCorpo1.setHorizontalAlignment(SwingConstants.CENTER);
-        labelCorpo1.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(labelCorpo1, BorderLayout.CENTER);
+        JLabel userInfo = new JLabel("<html><div style='text-align:center'><b>" + usuario.getUserName() + "</b> &middot; " + usuario.getEmail() + "</div></html>");
+        userInfo.setFont(UIManager.getFont("Label.font"));
+        userInfo.setForeground(MUTED);
+        userInfo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        userInfo.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
+        card.add(userInfo);
 
-        JPanel painelBotoes = new JPanel(new FlowLayout());
+        JSeparator sep = new JSeparator();
+        sep.setMaximumSize(new Dimension(300, 1));
+        sep.setForeground(BORDER);
+        sep.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(sep);
+        card.add(Box.createVerticalStrut(16));
 
-        JButton btnCadastrar = new JButton("Cadastrar um novo usuario");
-        JButton btnConsultar = new JButton("Consultar pasta de arquivos secretos");
-        JButton btnSair = new JButton("Sair do Sistema");
+        JLabel statsLabel = new JLabel("Total de acessos: " + usuario.getTotalUsers());
+        statsLabel.setFont(UIManager.getFont("Label.font"));
+        statsLabel.setForeground(TEXT);
+        statsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statsLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 18, 0));
+        card.add(statsLabel);
 
+        JButton btnCadastrar = criarBotaoPrincipal("Cadastrar novo usuario", null);
         btnCadastrar.addActionListener(e -> {
             new LogDAO().addLog(5002, usuario.getEmail(), now());
             String[] grupos = new br.com.cofredigital.database.Database().getGrupos();
             new Cadastro(usuario, grupos).setVisible(true);
             dispose();
         });
+        card.add(btnCadastrar);
+        card.add(Box.createVerticalStrut(10));
 
+        JButton btnConsultar = criarBotaoPrincipal("Consultar arquivos secretos", null);
         btnConsultar.addActionListener(e -> {
             new LogDAO().addLog(5003, usuario.getEmail(), now());
             consultarVault();
         });
+        card.add(btnConsultar);
+        card.add(Box.createVerticalStrut(16));
+
+        JButton btnSair = criarBotaoSecundario("Sair do Sistema");
         btnSair.addActionListener(e -> {
             new LogDAO().addLog(5004, usuario.getEmail(), now());
             new Sair(usuario).setVisible(true);
             dispose();
         });
+        card.add(btnSair);
 
-        painelBotoes.add(btnCadastrar);
-        painelBotoes.add(btnConsultar);
-        painelBotoes.add(btnSair);
-        add(painelBotoes, BorderLayout.SOUTH);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(20, 20, 20, 20);
+        add(card, gbc);
 
         pack();
+        setLocationRelativeTo(null);
         new LogDAO().addLog(5001, usuario.getEmail(), now());
     }
 
     private void configurarTelaUser() {
-        setLayout(new BorderLayout());
+        JPanel card = criarCard();
 
-        JLabel labelCabecalho = new JLabel("<html>Login: " + usuario.getEmail() + "<br>" +
-            "Grupo: Usuario<br>" +
-            "Nome: " + usuario.getUserName() + "</html>");
-        labelCabecalho.setHorizontalAlignment(SwingConstants.CENTER);
-        labelCabecalho.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(labelCabecalho, BorderLayout.NORTH);
+        JLabel titleLabel = new JLabel("Menu do Usuario");
+        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 18f));
+        titleLabel.setForeground(TEXT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        card.add(titleLabel);
 
-        JLabel labelCorpo1 = new JLabel("Total de acessos do usuario: " + usuario.getTotalUsers());
-        labelCorpo1.setHorizontalAlignment(SwingConstants.CENTER);
-        labelCorpo1.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        add(labelCorpo1, BorderLayout.CENTER);
+        JLabel userInfo = new JLabel("<html><div style='text-align:center'><b>" + usuario.getUserName() + "</b> &middot; " + usuario.getEmail() + "</div></html>");
+        userInfo.setFont(UIManager.getFont("Label.font"));
+        userInfo.setForeground(MUTED);
+        userInfo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        userInfo.setBorder(BorderFactory.createEmptyBorder(0, 0, 16, 0));
+        card.add(userInfo);
 
-        JPanel painelBotoes = new JPanel(new FlowLayout());
+        JSeparator sep = new JSeparator();
+        sep.setMaximumSize(new Dimension(300, 1));
+        sep.setForeground(BORDER);
+        sep.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(sep);
+        card.add(Box.createVerticalStrut(16));
 
-        JButton btnConsultar = new JButton("Consultar pasta de arquivos secretos");
-        JButton btnSair = new JButton("Sair do Sistema");
+        JLabel statsLabel = new JLabel("Total de acessos: " + usuario.getTotalUsers());
+        statsLabel.setFont(UIManager.getFont("Label.font"));
+        statsLabel.setForeground(TEXT);
+        statsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statsLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 18, 0));
+        card.add(statsLabel);
 
+        JButton btnConsultar = criarBotaoPrincipal("Consultar arquivos secretos", null);
         btnConsultar.addActionListener(e -> {
             new LogDAO().addLog(5003, usuario.getEmail(), now());
             consultarVault();
         });
+        card.add(btnConsultar);
+        card.add(Box.createVerticalStrut(16));
+
+        JButton btnSair = criarBotaoSecundario("Sair do Sistema");
         btnSair.addActionListener(e -> {
             new LogDAO().addLog(5004, usuario.getEmail(), now());
             new Sair(usuario).setVisible(true);
             dispose();
         });
+        card.add(btnSair);
 
-        painelBotoes.add(btnConsultar);
-        painelBotoes.add(btnSair);
-        add(painelBotoes, BorderLayout.SOUTH);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(20, 20, 20, 20);
+        add(card, gbc);
 
         pack();
+        setLocationRelativeTo(null);
         new LogDAO().addLog(5001, usuario.getEmail(), now());
     }
 
     private void consultarVault() {
-        new LogDAO().addLog(7001, usuario.getEmail(), now());
-
-        JTextField folderField = new JTextField(30);
-        JPasswordField phraseField = new JPasswordField(20);
-        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-        panel.add(new JLabel("Caminho da pasta:"));
-        panel.add(folderField);
-        panel.add(new JLabel("Frase secreta:"));
-        panel.add(phraseField);
-
-        int result = JOptionPane.showConfirmDialog(this, panel,
-            "Consultar Arquivos Secretos", JOptionPane.OK_CANCEL_OPTION);
-        if (result != JOptionPane.OK_OPTION) {
-            new LogDAO().addLog(7002, usuario.getEmail(), now());
-            return;
-        }
-        new LogDAO().addLog(7003, usuario.getEmail(), now());
-
-        String folderPath = folderField.getText().trim();
-        String phrase = new String(phraseField.getPassword());
-        if (folderPath.isEmpty() || phrase.isEmpty()) {
-            new LogDAO().addLog(7004, usuario.getEmail(), now());
-            JOptionPane.showMessageDialog(this, "Preencha todos os campos.", "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String adminPassphrase = UserService.getAdminPassphrase();
-
-        VaultService vs = new VaultService();
-        VaultResult vr = vs.listVaultFiles(usuario, folderPath, phrase, adminPassphrase);
-
-        if (!vr.isSuccess()) {
-            JOptionPane.showMessageDialog(this, vr.error, "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (vr.files.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nenhum arquivo encontrado para o usuario ou grupo.",
-                "Resultado", JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        String[] colunas = {"Codigo", "Nome", "Dono", "Grupo"};
-        Object[][] dados = new Object[vr.files.size()][4];
-        for (int i = 0; i < vr.files.size(); i++) {
-            VaultFileEntry f = vr.files.get(i);
-            dados[i] = new Object[]{f.codigo, f.nome, f.dono, f.grupo};
-        }
-
-        JTable table = new JTable(new DefaultTableModel(dados, colunas) {
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        });
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(500, 200));
-
-        VaultFileEntry[] selectedRef = new VaultFileEntry[1];
-
-        table.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
-                    if (row >= 0) {
-                        selectedRef[0] = vr.files.get(row);
-                        Window w = SwingUtilities.getWindowAncestor(table);
-                        if (w != null) w.dispose();
-                    }
-                }
-            }
-        });
-
-        JDialog dialog = new JDialog(this, "Arquivos Disponiveis", true);
-        dialog.setLayout(new BorderLayout());
-        dialog.add(scrollPane, BorderLayout.CENTER);
-
-        JButton btnVoltar = new JButton("Voltar");
-        btnVoltar.addActionListener(evt -> {
-            new LogDAO().addLog(7002, usuario.getEmail(), now());
-            dialog.dispose();
-        });
-        JPanel btnPanel = new JPanel();
-        btnPanel.add(btnVoltar);
-        dialog.add(btnPanel, BorderLayout.SOUTH);
-
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
-
-        VaultFileEntry selected = selectedRef[0];
-        if (selected == null) return;
-        new LogDAO().addLog(7010, usuario.getEmail(), now(), selected.nome);
-
-        if (!selected.dono.equals(usuario.getEmail())) {
-            new LogDAO().addLog(7012, usuario.getEmail(), now(), selected.nome);
-            JOptionPane.showMessageDialog(this, "Acesso negado: voce nao e o dono do arquivo.",
-                "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        new LogDAO().addLog(7011, usuario.getEmail(), now(), selected.nome);
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-            "Deseja decriptar o arquivo \"" + selected.nome + "\"?",
-            "Confirmacao", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
-        String error = vs.decryptFile(usuario, folderPath, selected.codigo, selected.nome, phrase, adminPassphrase);
-        if (error != null) {
-            JOptionPane.showMessageDialog(this, "Erro ao decriptar: " + error, "Erro", JOptionPane.ERROR_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "Arquivo decriptado com sucesso: " + selected.nome + "\nSalvo em: " + selected.nome,
-                "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-        }
+        dispose();
+        new ConsultarVault(usuario).setVisible(true);
     }
 
     private String now() {
